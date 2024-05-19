@@ -605,17 +605,21 @@ let cancelBooking = (data) => {
     }
   });
 };
+// Định nghĩa một hàm gọi là sendRemedy nhận một đối tượng dữ liệu làm đầu vào
 let sendRemedy = (data) => {
+  // Trả về một Promise để xử lý các hoạt động không đồng bộ
   return new Promise(async (resolve, reject) => {
     try {
+      // Kiểm tra xem các tham số cần thiết có tồn tại trong đối tượng dữ liệu hay không
       if (!data.email || !data.doctorId || !data.patientId || !data.timeType) {
+        // Nếu thiếu bất kỳ tham số nào, giải quyết Promise với một đối tượng lỗi
         resolve({
           errCode: 1,
-          errMessage: "Missing required parameter",
+          errMessage: "Hãy nhập đủ các trường",
         });
       } else {
-        //update patient status
-        let appoinment = await db.Booking.findOne({
+        // Cố gắng tìm một cuộc hẹn dựa trên doctorId, patientId, và timeType
+        let appointment = await db.Booking.findOne({
           where: {
             doctorId: data.doctorId,
             patientId: data.patientId,
@@ -625,55 +629,63 @@ let sendRemedy = (data) => {
           raw: false,
         });
 
-        if (appoinment) {
-          appoinment.statusId = "S3";
-          await appoinment.save();
+        // Nếu tìm thấy cuộc hẹn
+        if (appointment) {
+          // Cập nhật trạng thái của cuộc hẹn thành 'S3'
+          appointment.statusId = "S3";
+          await appointment.save(); // Lưu cuộc hẹn đã cập nhật
         }
 
-        //send email remedy
+        // Gửi email có tệp đính kèm bằng cách sử dụng dịch vụ emailService
         await emailService.sendAttachment(data);
 
-        //create invoice table
+        // Tạo một bản ghi trong bảng Hóa đơn với các chi tiết liên quan
         await db.Invoice.create({
           doctorId: data.doctorId,
           patientId: data.patientId,
           specialtyId: data.specialtyId,
-          totalCost: data.totalCost ? data.totalCost : 0,
+          totalCost: data.totalCost ? data.totalCost : 0, // Đặt totalCost là 0 nếu không được cung cấp
         });
 
-        //update to Revenue User table
+        // Cập nhật tổng doanh thu cho bác sĩ trong bảng Người dùng
         let userTotalRevenue = await db.User.findOne({
           where: { id: data.doctorId },
           raw: false,
         });
 
+        // Nếu tìm thấy userTotalRevenue, cập nhật tổng doanh thu
         if (userTotalRevenue) {
-          userTotalRevenue.totalRevenue =
-            userTotalRevenue.totalRevenue + parseInt(data.totalCost);
-          await userTotalRevenue.save();
+          userTotalRevenue.totalRevenue +=
+            parseInt(data.totalCost); // Tăng totalRevenue
+          await userTotalRevenue.save(); // Lưu tổng doanh thu đã cập nhật
         }
 
-        //update to totalCost User table
+        // Cập nhật tổng chi phí cho bệnh nhân trong bảng Người dùng
         let userTotalCost = await db.User.findOne({
           where: { id: data.patientId },
           raw: false,
         });
+        
+        // Nếu tìm thấy userTotalCost, cập nhật tổng chi phí
         if (userTotalCost) {
-          userTotalCost.totalCost =
-            userTotalCost.totalCost + parseInt(data.totalCost);
-          await userTotalCost.save();
+          userTotalCost.totalCost += 
+            parseInt(data.totalCost); // Tăng totalCost
+          await userTotalCost.save(); // Lưu tổng chi phí đã cập nhật
         }
 
+        // Giải quyết Promise với thông báo thành công
         resolve({
           errCode: 0,
           errMessage: "ok",
         });
       }
     } catch (e) {
+      // Nếu có bất kỳ lỗi nào xảy ra, từ chối Promise với đối tượng lỗi
       reject(e);
     }
   });
 };
+
 
 let createRemedy = (data) => {
   return new Promise(async (resolve, reject) => {
@@ -691,7 +703,7 @@ let createRemedy = (data) => {
       ) {
         resolve({
           errCode: 1,
-          errMessage: "Missing required parameter",
+          errMessage: "Hãy nhập đủ các trường",
         });
       } else {
         //create image remedy
