@@ -55,6 +55,78 @@ let getAllClinic = (data) => {
     }
   });
 };
+let updateClinic = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // if (!data.id || !data.roleId || !data.positionId || !data.gender) {
+      //   resolve({
+      //     errCode: 2,
+      //     errMessage: "Missing required parameter",
+      //   });
+      // }
+      if (!data.id) {
+        resolve({
+          errCode: 2,
+          errMessage: "Missing required parameter",
+        });
+      }
+      let Clinic = await db.Clinic.findOne({
+        where: { id: data.id },
+        raw: false, //chu y cho nay do ben file config cau hinh cho query
+      });
+      if (Clinic) {
+        Clinic.name = data.name;
+        Clinic.image = data.imageBase64;
+        Clinic.address = data.address;
+        Clinic.descriptionHTML = data.descriptionHTML;
+        Clinic.descriptionMarkdown = data.descriptionMarkdown;
+      
+       
+        await Clinic.save();
+
+        resolve({
+          errCode: 0,
+          message: "Update the user succeed!",
+        });
+      } else {
+        resolve({
+          errCode: 1,
+          errMessage: `User's not found!`,
+        });
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+let deleteClinic = (inputId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let clinic = await db.Clinic.findOne({
+        where: { id: inputId },
+      });
+
+      if (!clinic) {
+        return resolve({
+          errCode: 2,
+          errMessage: `The clinic doesn't exist`,
+        });
+      }
+
+      await db.Clinic.destroy({
+        where: { id: inputId },
+      });
+
+      resolve({
+        errCode: 0,
+        errMessage: `The clinic is deleted`,
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
 
 let getDetailClinicById = (inputId) => {
   return new Promise(async (resolve, reject) => {
@@ -100,4 +172,6 @@ module.exports = {
   createClinic: createClinic,
   getAllClinic: getAllClinic,
   getDetailClinicById: getDetailClinicById,
+  deleteClinic: deleteClinic,
+  updateClinic: updateClinic,
 };
